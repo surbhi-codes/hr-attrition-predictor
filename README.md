@@ -128,7 +128,7 @@ Open your browser at `http://localhost:8501`
 
 ## Tech Stack
 
-- **Python 3.10+**
+- **Python 3.14.2**
 - **scikit-learn** — ML pipeline, preprocessing, model training
 - **pandas / numpy** — data manipulation
 - **Streamlit** — web UI
