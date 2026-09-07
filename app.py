@@ -5,10 +5,11 @@ Streamlit web application that:
   1. Loads the trained ML pipeline from models/model.pkl
   2. Accepts HR employee feature inputs via sidebar widgets
   3. Predicts employee attrition probability
-  4. Provides an AI-powered explanation via Google Gemini 2.5 Flash
+  4. Provides an AI-powered explanation via Google Gemini 3.6 Flash
 """
 
 import os
+import time
 import joblib
 import pandas as pd
 import streamlit as st
@@ -53,19 +54,18 @@ ALL_RESULTS        = meta["all_results"]
 
 # ── Helper: Gemini explanation ────────────────────────────────────────────────
 def get_gemini_explanation(employee_data: dict, prediction: str, probability: float) -> str:
-    """Call Gemini 2.5 Flash to generate a human-readable attrition analysis."""
+    """Call Gemini 3.6 Flash to generate a human-readable attrition analysis."""
     if not GEMINI_API_KEY:
         return (
             "**Gemini AI explanation unavailable** — set your `GEMINI_API_KEY` "
             "in the `.env` file or as an environment variable."
         )
-    try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
-        emp_details = "\n".join(
-            f"  - {k}: {v}" for k, v in employee_data.items()
-        )
-        prompt = f"""
+    emp_details = "\n".join(
+        f"  - {k}: {v}" for k, v in employee_data.items()
+    )
+    prompt = f"""
 You are an expert HR analytics consultant. Analyse the following employee profile
 and the machine learning model's attrition prediction, then provide a clear,
 actionable explanation.
@@ -86,13 +86,32 @@ Please provide:
 
 Keep the tone professional and constructive. Use markdown formatting.
 """
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt,
-        )
-        return response.text
-    except Exception as exc:
-        return f"**Gemini API error:** {exc}"
+
+    max_retries = 3
+    retry_delay = 2  # seconds between attempts
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = client.models.generate_content(
+                model="gemini-3.6-flash",
+                contents=prompt,
+            )
+            return response.text
+        except Exception as exc:
+            error_str = str(exc)
+            is_last = attempt == max_retries
+            # Retry only on transient server-side errors (5xx / UNAVAILABLE)
+            if not is_last and ("503" in error_str or "UNAVAILABLE" in error_str or "429" in error_str):
+                time.sleep(retry_delay)
+                continue
+            # All retries exhausted or non-retryable error
+            if "503" in error_str or "UNAVAILABLE" in error_str:
+                return (
+                    "⚠️ **The Gemini AI service is temporarily unavailable** (model overloaded). "
+                    "The analysis could not be generated after 3 attempts. "
+                    "Please try again in a few moments — this is usually a transient issue."
+                )
+            return f"**Gemini API error:** {exc}"
 
 
 # ── Header ────────────────────────────────────────────────────────────────────
@@ -100,7 +119,7 @@ st.title("🏢 HR Employee Attrition Predictor")
 st.markdown(
     f"AI-powered attrition risk assessment using **{BEST_MODEL}** "
     f"(Test AUC: **{TEST_AUC}**, Accuracy: **{TEST_ACC}**) "
-    "combined with **Google Gemini 2.5 Flash** for intelligent HR insights."
+    "combined with **Google Gemini 3.6 Flash** for intelligent HR insights."
 )
 st.divider()
 
@@ -268,7 +287,7 @@ if predict_btn:
     st.divider()
 
     # ── Gemini AI Explanation ─────────────────────────────────────────────────
-    st.subheader("🤖 Gemini 2.5 Flash — AI HR Analysis")
+    st.subheader("🤖 Gemini 3.6 Flash — AI HR Analysis")
 
     if not GEMINI_API_KEY:
         st.warning(
@@ -277,7 +296,7 @@ if predict_btn:
             icon="⚠️",
         )
     else:
-        with st.spinner("Generating AI-powered HR analysis with Gemini 2.5 Flash…"):
+        with st.spinner("Generating AI-powered HR analysis with Gemini 3.6 Flash…"):
             explanation = get_gemini_explanation(INPUT_MAP, prediction_text, attrition_prob)
         st.markdown(explanation)
 
@@ -313,7 +332,7 @@ HR attrition dataset to predict whether an employee is likely to leave the organ
    Decision Tree, AdaBoost) are trained and compared using 5-fold cross-validation.
 2. The best-performing model (by ROC-AUC) is automatically selected and saved.
 3. You input an employee's details → the model returns an attrition probability.
-4. **Google Gemini 2.5 Flash** analyses the profile and prediction to generate
+4. **Google Gemini 3.6 Flash** analyses the profile and prediction to generate
    personalised HR recommendations.
 
 **Features used:** Age, Department, Job Role, Monthly Income, OverTime status,
@@ -324,6 +343,6 @@ Job Satisfaction, Years at Company, and many more HR metrics.
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.divider()
 st.caption(
-    "HR Attrition Predictor · Powered by scikit-learn & Google Gemini 2.5 Flash · "
+    "HR Attrition Predictor · Powered by scikit-learn & Google Gemini 3.6 Flash · "
     "Built with Streamlit"
 )
