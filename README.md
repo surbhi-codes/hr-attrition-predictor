@@ -1,13 +1,13 @@
 # HR Employee Attrition Predictor
 
-An AI-powered machine learning web application that predicts employee attrition risk and provides intelligent HR recommendations using **Google Gemini 2.5 Flash**.
+An AI-powered machine learning web application that predicts employee attrition risk and provides intelligent HR recommendations using **Google Gemini 3.6 Flash**.
 
 ## Features
 
 - **Binary classification** — predicts whether an employee is likely to leave (`Yes`) or stay (`No`)
 - **Multi-model comparison** — trains and evaluates Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, and AdaBoost; automatically selects the best model by ROC-AUC
 - **Complete ML pipeline** — preprocessing (scaling, encoding, imputation) + classifier saved as a single `.pkl`
-- **Gemini 2.5 Flash integration** — generates personalised HR analysis, key risk factors, protective factors, and actionable recommendations
+- **Gemini 3.6 Flash integration** — generates personalised HR analysis, key risk factors, protective factors, and actionable recommendations
 - **Streamlit UI** — clean sidebar form for employee details, live prediction with probability and risk level
 
 ---
@@ -132,6 +132,6 @@ Open your browser at `http://localhost:8501`
 - **scikit-learn** — ML pipeline, preprocessing, model training
 - **pandas / numpy** — data manipulation
 - **Streamlit** — web UI
-- **Google Generative AI SDK** — Gemini 2.5 Flash integration
+- **Google Generative AI SDK** — Gemini 3.6 Flash integration
 - **joblib** — model serialisation
 - **python-dotenv** — environment variable management
